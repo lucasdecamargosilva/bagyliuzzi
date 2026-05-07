@@ -50,12 +50,12 @@
 
         :root {
             --c-bg: #ffffff;
-            --c-surface: #f7f6f4;
-            --c-ink: #111111;
-            --c-muted: #999;
-            --c-line: #e8e8e8;
-            --c-accent: #111111;
-            --c-brand: #111111;
+            --c-surface: #f5e8db;
+            --c-ink: #1a1a1a;
+            --c-muted: #8a7a6a;
+            --c-line: #e6d4c1;
+            --c-accent: #1a1a1a;
+            --c-brand: #ed3a8e;
             --c-danger: #cc3333;
             --font-display: 'Bebas Neue', sans-serif;
             --font-body: 'DM Sans', sans-serif;
@@ -492,7 +492,7 @@
                     <!-- Persistent header (all steps) -->
                     <div id="q-header-provador">
                         <h1>Provador Virtual</h1>
-                        <img src="https://cdn.dooca.store/148329/files/liuzzi-l-black.png?v=1730403153" alt="Liuzzi" style="height:48px;width:auto;filter:brightness(0);"/>
+                        <img src="https://cdn.dooca.store/148329/files/liuzzi-l-black.png?v=1730403153" alt="Liuzzi" style="height:28px;width:auto;filter:brightness(0);"/>
                     </div>
 
                     <!-- Main step -->
@@ -848,38 +848,8 @@
         function populateImageSelector() {
             const imgs = extractImages();
             const group = document.getElementById('q-photo-selector-group');
-            if (!group) {
-                selectedProductImgUrl = imgs[0] || '';
-                return;
-            }
-            // Se tem 0 ou 1 imagem, esconde o seletor
-            if (imgs.length < 2) {
-                group.style.display = 'none';
-                selectedProductImgUrl = imgs[0] || '';
-                return;
-            }
-            // Limpa thumbs anteriores
-            const grid = group.querySelector('.q-product-thumbs');
-            grid.innerHTML = '';
-            selectedProductImgUrl = imgs[0];
-            imgs.forEach((src, idx) => {
-                const thumb = document.createElement('button');
-                thumb.type = 'button';
-                thumb.className = 'q-product-thumb' + (idx === 0 ? ' selected' : '');
-                thumb.dataset.url = src;
-                const img = document.createElement('img');
-                img.src = src;
-                img.alt = 'Foto ' + (idx + 1);
-                img.loading = 'lazy';
-                thumb.appendChild(img);
-                thumb.addEventListener('click', () => {
-                    grid.querySelectorAll('.q-product-thumb').forEach(t => t.classList.remove('selected'));
-                    thumb.classList.add('selected');
-                    selectedProductImgUrl = src;
-                });
-                grid.appendChild(thumb);
-            });
-            group.style.display = 'block';
+            if (group) group.style.display = 'none';
+            selectedProductImgUrl = imgs[0] || '';
         }
 
         function openModal() {
