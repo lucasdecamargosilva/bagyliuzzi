@@ -64,7 +64,7 @@
         /* ── Trigger (selo sobre foto) ── */
         @keyframes q-shake { 0%,50%,100%{transform:rotate(0deg)} 10%,30%{transform:rotate(-10deg)} 20%,40%{transform:rotate(10deg)} }
         .q-btn-trigger-ia {
-            position: fixed !important; z-index: 999998 !important;
+            position: fixed !important; z-index: 99 !important;
             background: none !important; border: none !important; padding: 0 !important; cursor: pointer !important;
             width: 70px !important; height: 70px !important;
             display: flex !important; align-items: center !important; justify-content: center !important;
@@ -682,8 +682,9 @@
             const rect = target.getBoundingClientRect();
             const btnSize = 70;
             const margin = 14;
-            // Posiciona no canto superior direito da imagem
-            openBtn.style.top = (rect.top + margin) + 'px';
+            const offsetTop = 60;
+            // Posiciona no canto superior direito da imagem (um pouco mais pra baixo)
+            openBtn.style.top = (rect.top + margin + offsetTop) + 'px';
             openBtn.style.left = (rect.right - btnSize - margin) + 'px';
             openBtn.style.visibility = 'visible';
             return true;
