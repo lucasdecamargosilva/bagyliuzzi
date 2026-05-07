@@ -1,5 +1,7 @@
 (function () {
-    console.log('[PL] Widget Óculos em Foco carregado | URL:', window.location.pathname);
+    if (window.__PL_LIUZZI_LOADED__) { console.log('[PL] Widget Liuzzi já carregado — ignorando duplicata.'); return; }
+    window.__PL_LIUZZI_LOADED__ = true;
+    console.log('[PL] Widget Liuzzi carregado | URL:', window.location.pathname);
     // ===============================================
     // 0. CHUMBAR A API KEY AQUI DIRETO NO CÓDIGO
     // ===============================================
@@ -682,7 +684,7 @@
             const rect = target.getBoundingClientRect();
             const btnSize = 70;
             const margin = 14;
-            const offsetTop = 60;
+            const offsetTop = 30;
             // Posiciona no canto superior direito da imagem (um pouco mais pra baixo)
             openBtn.style.top = (rect.top + margin + offsetTop) + 'px';
             openBtn.style.left = (rect.right - btnSize - margin) + 'px';
