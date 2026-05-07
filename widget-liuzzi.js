@@ -1284,7 +1284,17 @@
     }
 
     // ─── EXECUTA APENAS EM PÁGINAS DE PRODUTO ────────────────────────────────────
-    const isProductPage = window.location.pathname.includes('/products/') || window.location.pathname.includes('/product/') || window.location.pathname.includes('/produtos/') || window.location.pathname.includes('/produto/') || window.location.pathname.includes('/p/') || window.location.pathname.includes('preview.html') || document.querySelector('meta[property="og:type"][content="product"]') || document.querySelector('#form-add-cart') || document.querySelector('.product-action') || document.querySelector('#button-buy') || document.querySelector('[name="variation_id"]');
+    function detectProductPage() {
+        if (window.location.pathname === '/' || /^\/(oculos-de-sol|categorias?|colecao|colecoes|busca|search|carrinho|checkout|conta|login|quem-somos|contato|institucional)\/?$/.test(window.location.pathname)) return false;
+        if (document.querySelector('input[name="variation_id"]')) return true;
+        if (document.querySelector('.product-action-price')) return true;
+        const ld = document.querySelectorAll('script[type="application/ld+json"]');
+        for (const s of ld) { try { const j = JSON.parse(s.textContent); const t = (j['@type'] || (j['@graph']||[]).map(x=>x['@type']).flat()); if ((Array.isArray(t)?t:[t]).includes('Product')) return true; } catch(_){} }
+        if (document.querySelector('meta[property="og:type"][content="product"]')) return true;
+        if (window.location.pathname.includes('/produto/') || window.location.pathname.includes('/products/') || window.location.pathname.includes('/p/')) return true;
+        return false;
+    }
+    const isProductPage = detectProductPage();
     console.log('[PL] É página de produto?', isProductPage);
 
     if (isProductPage) {
