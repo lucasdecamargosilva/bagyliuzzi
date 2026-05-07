@@ -492,7 +492,7 @@
                     <!-- Persistent header (all steps) -->
                     <div id="q-header-provador">
                         <h1>Provador Virtual</h1>
-                        <img src="https://cdn.dooca.store/148329/files/liuzzi-l-black.png?v=1730403153" alt="Liuzzi" style="height:28px;width:auto;filter:brightness(0);"/>
+                        <img src="https://cdn.dooca.store/148329/files/liuzzi-l-black.png?v=1730403153" alt="Liuzzi" style="height:18px;width:auto;filter:brightness(0);"/>
                     </div>
 
                     <!-- Main step -->
