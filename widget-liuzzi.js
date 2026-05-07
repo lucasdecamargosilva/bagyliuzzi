@@ -970,9 +970,14 @@
                     var nameEl = item.querySelector('.product-name, .card-product-name, .product-title, .card-title, h3, h4, [class*="name"]');
                     var name = nameEl ? nameEl.textContent.trim() : (imgEl && imgEl.alt ? imgEl.alt.trim() : '');
 
-                    // 4) Preço — tenta multiplos seletores
+                    // 4) Preço — tenta multiplos seletores e extrai só o "R$ X,XX" (ignora parcelamento/creditcard)
                     var priceEl = item.querySelector('.product-price-final .total, .product-price-final .price, .product-price .total, .price-final, .product-price, .card-product-price, [class*="price"]');
-                    var price = priceEl ? priceEl.textContent.trim().replace(/\s+/g, ' ') : '';
+                    var price = '';
+                    if (priceEl) {
+                        var raw = priceEl.textContent.replace(/\s+/g, ' ').trim();
+                        var m = raw.match(/R\$\s*[\d.]+,\d{2}/);
+                        price = m ? m[0] : '';
+                    }
 
                     if (img && name) {
                         products.push({ name: name, img: img, price: price, link: link });
