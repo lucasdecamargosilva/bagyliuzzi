@@ -33,12 +33,17 @@
     const WEBHOOK_BUY_CLICK = 'https://n8n.segredosdodrop.com/webhook/pl-provador-buy-click';
 
     // ── Botão "Comprar Agora" no resultado (Bagy/Dooca) ─────────────────────────
-    // Preço exibido na página do produto (fallback: window.dooca.product.price).
+    // Preço FINAL que o cliente paga. Prioriza o campo autoritativo do Dooca
+    // (window.dooca.product.price já vem com desconto aplicado — price_compare é o "de"),
+    // depois o preço final exibido (.product-price-final) e por fim .price.
     function getMainPrice() {
-        var el = document.querySelector('.price, .product-price .price, [data-price]');
+        try {
+            var dp = window.dooca && window.dooca.product ? window.dooca.product.price : null;
+            if (typeof dp === 'number' && dp > 0) return 'R$ ' + dp.toFixed(2).replace('.', ',');
+        } catch (e) {}
+        var el = document.querySelector('.product-price-final, .price, [data-price]');
         var t = el ? (el.textContent || '').trim() : '';
         if (t && /\d/.test(t)) return t.replace(/\s+/g, ' ');
-        try { if (window.dooca && window.dooca.product && window.dooca.product.price) return 'R$ ' + Number(window.dooca.product.price).toFixed(2).replace('.', ','); } catch (e) {}
         return '';
     }
     // Botão nativo de compra da loja (Dooca/Bagy).
