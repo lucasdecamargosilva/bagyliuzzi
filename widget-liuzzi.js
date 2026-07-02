@@ -476,7 +476,7 @@
         /* Resultado enxuto: só o botão de comprar (sem voltar/tentar/provas restantes) */
         .q-card-ia.is-result #q-retry-btn,
         .q-card-ia.is-result #q-provas-restantes-result { display: none !important; }
-        .q-card-ia.is-result #q-btn-back { display: flex !important; align-items: center; justify-content: center; }
+        .q-card-ia.is-result #q-btn-back { display: none !important; }
         #q-buy-success { display: none; flex-direction: column; gap: 10px; }
         .q-buy-ok-msg {
             display: flex; align-items: center; justify-content: center; gap: 8px;
