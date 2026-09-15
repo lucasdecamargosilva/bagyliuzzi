@@ -450,10 +450,12 @@
         /* ── CTA buttons ── */
         .q-btn-black {
             width: 100%; height: 52px;
+            display: flex; align-items: center; justify-content: center;
             background: var(--c-ink); color: #fff;
             border: none; border-radius: 14px;
             font-family: var(--font-display); font-size: 17px;
             letter-spacing: 3px; text-transform: uppercase;
+            padding: 0 18px; line-height: 1.15; text-align: center;
             cursor: pointer; transition: opacity 0.2s; box-sizing: border-box;
         }
         .q-btn-black:hover:not(:disabled) { opacity: 0.82; }
@@ -976,18 +978,46 @@
             openModal();
         });
 
-        // Posiciona acima do botão de compra
-        const buyBtn = document.querySelector('.product-buy-button, .product-buy button, .product-buy [type="submit"], .js-addtocart, .btn-add-to-cart, [data-component="product.add-to-cart"]');
-        if (buyBtn) {
-            let target = buyBtn;
-            const buyContainer = buyBtn.closest('.product-buy, .row');
-            if (buyContainer && buyContainer.parentNode) target = buyContainer;
-            target.parentNode.insertBefore(inlineBtn, target);
-        } else {
-            const variantsContainer = document.querySelector('.js-product-variants');
-            if (variantsContainer) {
-                variantsContainer.parentNode.insertBefore(inlineBtn, variantsContainer.nextSibling);
+        // Posiciona acima do botão de compra. A Shopify pode montar o product-form
+        // depois do DOMContentLoaded, então a inserção é repetida quando necessário.
+        function placeInlineTryOnButton() {
+            if (inlineBtn.isConnected) return true;
+
+            const buyBtn = document.querySelector([
+                '.product-form__submit',
+                'product-form form[action*="/cart/add"] button[type="submit"]',
+                'form[action*="/cart/add"] button[name="add"]',
+                'form[action*="/cart/add"] [type="submit"]',
+                '.product-buy-button',
+                '.product-buy button',
+                '.product-buy [type="submit"]',
+                '.js-addtocart',
+                '.btn-add-to-cart',
+                '[data-component="product.add-to-cart"]'
+            ].join(','));
+
+            if (buyBtn && buyBtn.parentNode) {
+                // No Dawn e derivados, mantém provador e comprar no mesmo grupo visual.
+                const buttons = buyBtn.closest('.product-form__buttons');
+                if (buttons) buttons.insertBefore(inlineBtn, buttons.firstChild);
+                else buyBtn.parentNode.insertBefore(inlineBtn, buyBtn);
+                return true;
             }
+
+            const variantsContainer = document.querySelector('.js-product-variants');
+            if (variantsContainer && variantsContainer.parentNode) {
+                variantsContainer.parentNode.insertBefore(inlineBtn, variantsContainer.nextSibling);
+                return true;
+            }
+            return false;
+        }
+
+        if (!placeInlineTryOnButton()) {
+            const inlineObserver = new MutationObserver(function () {
+                if (placeInlineTryOnButton()) inlineObserver.disconnect();
+            });
+            inlineObserver.observe(document.body, { childList: true, subtree: true });
+            setTimeout(function () { inlineObserver.disconnect(); }, 15000);
         }
         const genBtn      = document.getElementById('q-btn-generate');
         const nextBtn     = null; // single-step flow — no next button
