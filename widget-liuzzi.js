@@ -35,22 +35,71 @@
     const WEBHOOK_BUY_CLICK = 'https://n8n.segredosdodrop.com/webhook/pl-provador-buy-click';
 
     // ── Botão "Comprar Agora" no resultado (Bagy/Dooca) ─────────────────────────
-    // Preço FINAL que o cliente paga. Prioriza o campo autoritativo do Dooca
-    // (window.dooca.product.price já vem com desconto aplicado — price_compare é o "de"),
-    // depois o preço final exibido (.product-price-final) e por fim .price.
+    function formatBRL(value) {
+        var n = Number(value);
+        if (!isFinite(n) || n <= 0) return '';
+        try { return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(n); }
+        catch (e) { return 'R$ ' + n.toFixed(2).replace('.', ','); }
+    }
+
+    // Preço FINAL do produto. Lê primeiro as fontes estruturadas da Shopify/Dooca
+    // para não depender do texto visual, que varia entre temas e promoções.
     function getMainPrice() {
         try {
             var dp = window.dooca && window.dooca.product ? window.dooca.product.price : null;
-            if (typeof dp === 'number' && dp > 0) return 'R$ ' + dp.toFixed(2).replace('.', ',');
+            if (typeof dp === 'number' && dp > 0) return formatBRL(dp);
         } catch (e) {}
-        var el = document.querySelector('.product-price-final, .price, [data-price]');
+
+        try {
+            var product = window.ShopifyAnalytics && window.ShopifyAnalytics.meta && window.ShopifyAnalytics.meta.product;
+            var selectedId = (document.querySelector('form[action*="/cart/add"] [name="id"]') || {}).value;
+            var variants = product && product.variants ? product.variants : [];
+            var selected = variants.filter(function (v) { return String(v.id) === String(selectedId); })[0] || variants[0];
+            if (selected && Number(selected.price) > 0) return formatBRL(Number(selected.price) / 100);
+        } catch (e) {}
+
+        try {
+            var amountMeta = document.querySelector('meta[property="product:price:amount"]');
+            if (amountMeta && Number(amountMeta.content) > 0) return formatBRL(amountMeta.content);
+        } catch (e) {}
+
+        try {
+            var ld = document.querySelectorAll('script[type="application/ld+json"]');
+            for (var i = 0; i < ld.length; i++) {
+                var data = JSON.parse(ld[i].textContent || '{}');
+                var offer = data.offers || null;
+                if (Array.isArray(offer)) offer = offer[0];
+                if (offer && Number(offer.price) > 0) return formatBRL(offer.price);
+            }
+        } catch (e) {}
+
+        var el = document.querySelector([
+            '.product__info-container .price-item--sale',
+            '.product__info-container .price-item--regular',
+            '.price__container .price-item',
+            '[data-product-price]',
+            '.product-price-final',
+            '.product-action-price .price',
+            '.price'
+        ].join(','));
         var t = el ? (el.textContent || '').trim() : '';
         if (t && /\d/.test(t)) return t.replace(/\s+/g, ' ');
         return '';
     }
-    // Botão nativo de compra da loja (Dooca/Bagy).
+    // Botão nativo de compra da loja (Shopify/Dooca/Bagy).
     function findStoreBuyBtn() {
-        return document.querySelector('.product-buy-button, .product-buy button, .product-buy [type="submit"]');
+        return document.querySelector([
+            '.product-form__submit',
+            'product-form form[action*="/cart/add"] button[type="submit"]',
+            'form[action*="/cart/add"] button[name="add"]',
+            'form[action*="/cart/add"] [type="submit"]',
+            '.product-buy-button',
+            '.product-buy button',
+            '.product-buy [type="submit"]',
+            '.js-addtocart',
+            '.btn-add-to-cart',
+            '[data-component="product.add-to-cart"]'
+        ].join(','));
     }
     // Clique em "Comprar Agora": marca carrinho_adicionado na prova (tracking por telefone)
     // e aciona o botão nativo da loja (add-to-cart do Dooca).
@@ -65,6 +114,8 @@
         // Feedback dentro do provador (a confirmação da loja fica atrás do modal).
         var _b = document.getElementById('q-btn-buy-now'); if (_b) _b.style.display = 'none';
         var _s = document.getElementById('q-buy-success'); if (_s) _s.style.display = 'flex';
+        var _cart = document.getElementById('q-btn-go-cart');
+        if (_cart) _cart.href = document.querySelector('form[action*="/cart/add"]') ? '/cart' : '/carrinho';
     }
     // Mostra o botão no resultado + preenche o preço.
     // Parcelamento (Dooca): plano de cartão do produto (fallback: texto da página).
@@ -462,10 +513,12 @@
         .q-btn-black:disabled { background: #ccc; cursor: not-allowed; }
         .q-btn-outline {
             width: 100%; height: 52px;
+            display: flex; align-items: center; justify-content: center;
             background: transparent; color: var(--c-ink);
             border: 1.5px solid var(--c-line); border-radius: 14px;
             font-family: var(--font-display); font-size: 17px;
             letter-spacing: 3px; text-transform: uppercase;
+            padding: 0 18px; line-height: 1.15; text-align: center;
             cursor: pointer; transition: border-color 0.2s, background 0.2s; box-sizing: border-box;
         }
         .q-btn-outline:hover { border-color: var(--c-ink); background: var(--c-surface); }
@@ -1829,27 +1882,34 @@ const fd = new FormData();
                         }
                     }
                 } catch (_) {}
-                    // Detecção de rosto: manda 1 foto no rosto como PRINCIPAL (o gerador usa pra
-                    // calibrar a proporção/tamanho do óculos) + as fotos de fundo branco (packshot),
-                    // que mostram os detalhes da armação. Assim garante proporção E detalhe.
-                    // Sem rosto detectado → mantém as fotos default (fallback, sem regressão).
+                    // Regra Liuzzi: uma foto do óculos no rosto é obrigatória e sempre vai como
+                    // referência principal. Packshots entram depois apenas para apoiar os detalhes.
                     try {
-                        if (faceDetectPromise) { await Promise.race([faceDetectPromise, new Promise(function (r) { setTimeout(r, 4000); })]); }
-                        if (_faceUrls && _faceUrls.length) {
-                            var _key = function (u) { return String(u || '').split('?')[0]; };
-                            var _faceKeys = {};
-                            _faceUrls.forEach(function (u) { _faceKeys[_key(u)] = 1; });
-                            var _packshots = allProdImgs.filter(function (u) { return !_faceKeys[_key(u)]; });
-                            var _mix = [];
-                            var _add = function (u) { if (u && !_mix.some(function (x) { return _key(x) === _key(u); })) _mix.push(u); };
-                            _add(_faceUrls[0]);
-                            _packshots.forEach(_add);
-                            _faceUrls.slice(1).forEach(_add);
-                            allProdImgs.forEach(_add);
-                            allProdImgs = _mix;
+                        if (!faceDetectPromise) startFaceDetect();
+                        if (faceDetectPromise) {
+                            await Promise.race([faceDetectPromise, new Promise(function (r) { setTimeout(r, 9000); })]);
                         }
                     } catch (e) {}
-                allProdImgs = allProdImgs.slice(0, 4);
+
+                    if (!_faceUrls || !_faceUrls.length) {
+                        try { document.getElementById('q-loading-box').style.display = 'none'; } catch (_) {}
+                        try { uploadStep.style.display = 'flex'; } catch (_) {}
+                        try { genBtn.disabled = false; } catch (_) {}
+                        alert('Não encontramos uma foto deste óculos no rosto. Tente novamente em alguns segundos.');
+                        return;
+                    }
+
+                    var _key = function (u) { return String(u || '').split('?')[0]; };
+                    var _faceKeys = {};
+                    _faceUrls.forEach(function (u) { _faceKeys[_key(u)] = 1; });
+                    var _packshots = allProdImgs.filter(function (u) { return !_faceKeys[_key(u)]; });
+                    var _mix = [];
+                    var _add = function (u) { if (u && !_mix.some(function (x) { return _key(x) === _key(u); })) _mix.push(u); };
+                    _add(_faceUrls[0]);
+                    _packshots.forEach(_add);
+                    _faceUrls.slice(1).forEach(_add);
+                    allProdImgs = _mix;
+                    allProdImgs = allProdImgs.slice(0, 4);
                 console.log('[PL Liuzzi] Enviando', allProdImgs.length, 'fotos do produto');
                 let _primaryDone = false, _slot = 1;
                     for (let _pi = 0; _pi < allProdImgs.length; _pi++) {
