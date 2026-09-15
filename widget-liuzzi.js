@@ -523,7 +523,7 @@
         }
         .q-btn-outline:hover { border-color: var(--c-ink); background: var(--c-surface); }
         .q-btn-buy-now {
-            width: 100%; padding: 16px 18px; margin-bottom: 10px;
+            width: 100%; padding: 16px 18px; margin-bottom: 0;
             background: var(--c-ink); color: #fff; border: 1px solid var(--c-ink);
             border-radius: 14px; font-family: var(--font-body);
             font-weight: 700; font-size: 15px; letter-spacing: .3px; cursor: pointer;
@@ -1313,7 +1313,7 @@
             b.id = 'q-btn-nova-prova';
             b.className = 'q-btn-outline';
             b.textContent = 'Provar outra foto';
-            b.style.marginTop = '10px';
+            b.style.marginTop = '0';
             b.onclick = _plNovaProva;
             col.appendChild(b);
         }
