@@ -103,13 +103,43 @@
     }
     // Clique em "Comprar Agora": marca carrinho_adicionado na prova (tracking por telefone)
     // e aciona o botão nativo da loja (add-to-cart do Dooca).
-    function buyNow() {
+    var buyInProgress = false;
+    async function buyNow() {
+        if (buyInProgress) return;
+        var sb = findStoreBuyBtn();
+        var form = sb && sb.closest('form[action*="/cart/add"]');
+        var button = document.getElementById('q-btn-buy-now');
+        var cartRoot = (window.Shopify && window.Shopify.routes && window.Shopify.routes.root) || '/';
+        if (form) {
+            if (sb.disabled || sb.getAttribute('aria-disabled') === 'true' || !form.reportValidity()) return;
+            buyInProgress = true;
+            var originalLabel = button.textContent;
+            button.disabled = true;
+            button.textContent = 'Adicionando...';
+            try {
+                var response = await fetch(cartRoot + 'cart/add.js', {
+                    method: 'POST', credentials: 'same-origin',
+                    headers: { 'Accept': 'application/json' }, body: new FormData(form)
+                });
+                var result = await response.json();
+                if (!response.ok || result.status >= 400) throw new Error(result.description || 'Não foi possível adicionar o produto. Tente novamente.');
+            } catch (error) {
+                buyInProgress = false;
+                button.disabled = false;
+                button.textContent = originalLabel;
+                window.alert(error.message || 'Não foi possível adicionar o produto. Tente novamente.');
+                return;
+            }
+        }
         try {
             var _tp = (document.getElementById('q-phone') || {}).value || '';
             var _td = (document.querySelector('h1.product-detail-info-name, h1') || {}).innerText || document.title || '';
             fetch(WEBHOOK_BUY_CLICK, { method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone: _tp, origin: location.origin, produto: _td }) }).catch(function () {});
         } catch (e) {}
-        var sb = findStoreBuyBtn();
+        if (form) {
+            window.location.assign(cartRoot + 'cart');
+            return;
+        }
         if (sb) { try { sb.click(); } catch (e) {} }
         // Feedback dentro do provador (a confirmação da loja fica atrás do modal).
         var _b = document.getElementById('q-btn-buy-now'); if (_b) _b.style.display = 'none';
