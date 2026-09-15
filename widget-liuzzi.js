@@ -1203,7 +1203,7 @@
                 const og = document.querySelector('meta[property="og:image"]')?.content;
                 if (og) uniqueImgs.push(upgradeImgUrl(og));
             }
-            return uniqueImgs.slice(0, 4);
+            return uniqueImgs;
         }
 
         function populateImageSelector() {
@@ -1260,7 +1260,7 @@
             if (!urls || !urls.length) return _faceUrls;
             var det = await getFaceDetector();
             if (!det) return _faceUrls;
-            for (var i = 0; i < urls.length && _faceUrls.length < 4; i++) {
+            for (var i = 0; i < urls.length; i++) {
                 var img = await _plLoadCorsImg(urls[i]);
                 if (!img) continue;
                 if (await _plImgHasFace(det, img)) _faceUrls.push(urls[i]);
@@ -1270,7 +1270,7 @@
         function startFaceDetect() {
             if (faceDetectPromise) return faceDetectPromise;
             var _urls = [];
-            try { if (typeof extractImages === 'function') _urls = extractImages().slice(0, 12); } catch (e) {}
+            try { if (typeof extractImages === 'function') _urls = extractImages(); } catch (e) {}
             faceDetectPromise = _plDetectFaces(_urls).then(function (arr) {
                 if (arr && arr.length) { try { console.log('[PL] fotos no rosto detectadas:', arr.length); } catch (e) {} }
                 return arr;
@@ -1920,14 +1920,12 @@ const fd = new FormData();
                         }
                     }
                 } catch (_) {}
-                    // Regra Liuzzi: uma foto do óculos no rosto é obrigatória e sempre vai como
-                    // referência principal. Packshots entram depois apenas para apoiar os detalhes.
-                    try {
-                        if (!faceDetectPromise) startFaceDetect();
-                        if (faceDetectPromise) {
-                            await Promise.race([faceDetectPromise, new Promise(function (r) { setTimeout(r, 9000); })]);
-                        }
-                    } catch (e) {}
+                    // Regra Liuzzi: envia todas as fotos do óculos no rosto como referências.
+                    if (!faceDetectPromise) startFaceDetect();
+                    // Aguarda a galeria inteira: não envia uma lista parcial após 9 segundos.
+                    await Promise.race([faceDetectPromise, new Promise(function (_, reject) {
+                        setTimeout(function () { reject(new Error('Tempo excedido ao analisar as referências.')); }, 30000);
+                    })]);
 
                     if (!_faceUrls || !_faceUrls.length) {
                         try { document.getElementById('q-loading-box').style.display = 'none'; } catch (_) {}
@@ -1937,23 +1935,18 @@ const fd = new FormData();
                         return;
                     }
 
-                    var _key = function (u) { return String(u || '').split('?')[0]; };
-                    var _faceKeys = {};
-                    _faceUrls.forEach(function (u) { _faceKeys[_key(u)] = 1; });
-                    var _packshots = allProdImgs.filter(function (u) { return !_faceKeys[_key(u)]; });
-                    var _mix = [];
-                    var _add = function (u) { if (u && !_mix.some(function (x) { return _key(x) === _key(u); })) _mix.push(u); };
-                    _add(_faceUrls[0]);
-                    _packshots.forEach(_add);
-                    _faceUrls.slice(1).forEach(_add);
-                    allProdImgs = _mix;
-                    allProdImgs = allProdImgs.slice(0, 4);
+                    // Todas as fotos detectadas no rosto, sem packshots ocupando suas vagas.
+                    allProdImgs = _faceUrls.slice();
+                    if (allProdImgs.length > 20) throw new Error('Quantidade de referências acima da capacidade do gerador.');
                 console.log('[PL Liuzzi] Enviando', allProdImgs.length, 'fotos do produto');
                 let _primaryDone = false, _slot = 1;
                     for (let _pi = 0; _pi < allProdImgs.length; _pi++) {
                     try {
-                        const _b = await fetch(allProdImgs[_pi]).then(r => r.blob());
-                            if (!_b || !/^image\//i.test(_b.type)) continue; // pula HTML/nao-imagem -> evita 400 do gerador (ALTA DEMANDA)
+                        const _b = await fetch(allProdImgs[_pi], { signal: AbortSignal.timeout(15000) }).then(r => {
+                            if (!r.ok) throw new Error('Falha ao baixar referência no rosto.');
+                            return r.blob();
+                        });
+                        if (!_b || !/^image\//i.test(_b.type)) throw new Error('Referência no rosto inválida.');
                         if (!_primaryDone) {
                             fd.append('product_image', _b, 'product.jpg'); _primaryDone = true;
                         } else {
@@ -1966,7 +1959,7 @@ const fd = new FormData();
                             });
                             fd.append('product_image_' + _slot + '_b64', _b64);
                         }
-                    } catch (_) { }
+                    } catch (error) { throw error; }
                 }
 
                 const res = await fetch(WEBHOOK_PROVA, { method: 'POST', body: fd });
