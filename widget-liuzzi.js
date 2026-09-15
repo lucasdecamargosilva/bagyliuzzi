@@ -120,6 +120,14 @@
     // Mostra o botão no resultado + preenche o preço.
     // Parcelamento (Dooca): plano de cartão do produto (fallback: texto da página).
     function getInstallment() {
+        // Shopify Liuzzi: preserva parcelas, valor e juros publicados pelo tema.
+        var installments = document.querySelectorAll('main .installments');
+        for (var i = 0; i < installments.length; i++) {
+            var node = installments[i];
+            if (node.closest('#q-modal-ia, product-card, .product-card')) continue;
+            var text = (node.textContent || '').replace(/\s+/g, ' ').trim();
+            if (/\d+\s*x\s+de\s/i.test(text)) return text;
+        }
         try {
             var cc = window.dooca && window.dooca.product && window.dooca.product.payments && window.dooca.product.payments.creditcard;
             if (cc && cc.parcels >= 2 && cc.parcel_price > 0) {
