@@ -3679,8 +3679,14 @@ const fd = new FormData();
                         return;
                     }
 
-                    // Todas as fotos detectadas no rosto, sem packshots ocupando suas vagas.
-                    allProdImgs = _faceUrls.slice();
+                    // 12/10/2026 (Lucas): fotos no rosto como principais (ate 3) + packshot junto, ate 4.
+                    // O gerador confere por imagem que todas sao da MESMA cor da principal.
+                    (function () {
+                        var _key = function (u) { return String(u || '').split('?')[0]; };
+                        var _fk = {}; _faceUrls.forEach(function (u) { _fk[_key(u)] = 1; });
+                        var _pack = allProdImgs.filter(function (u) { return !_fk[_key(u)]; });
+                        allProdImgs = _faceUrls.slice(0, 3).concat(_pack).slice(0, 4);
+                    })();
                     if (allProdImgs.length > 20) throw new Error('Quantidade de referências acima da capacidade do gerador.');
                 console.log('[PL Liuzzi] Enviando', allProdImgs.length, 'fotos do produto');
 
