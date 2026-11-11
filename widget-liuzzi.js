@@ -1433,7 +1433,7 @@ setInterval(function(){var el=document.getElementById('q-step-error');if(!el)ret
 
         .q-powered-footer span { font-size: 9.5px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--c-muted); }
 
-        .q-quantic-logo { height: 20px; opacity: 0.7; }
+        .q-quantic-logo { height: 20px !important; width: auto !important; max-width: none !important; object-fit: contain; opacity: 0.7; }
 
     `;
 
@@ -1918,7 +1918,8 @@ setInterval(function(){var el=document.getElementById('q-step-error');if(!el)ret
 
             openBtn.style.left = (rect.right - btnSize - margin) + 'px';
 
-            openBtn.style.visibility = 'visible';
+            // 10/11/2026: se um pop-up/gaveta do site cobre a foto, o selo some (não fica por cima).
+            openBtn.style.visibility = plSeloCoberto(target, rect.right - margin - btnSize / 2, rect.top + margin + offsetTop + btnSize / 2) ? 'hidden' : 'visible';
 
             return true;
 
@@ -1926,6 +1927,20 @@ setInterval(function(){var el=document.getElementById('q-step-error');if(!el)ret
 
 
 
+        function plSeloCoberto(target, x, y) {
+            try {
+                if (x < 0 || y < 0 || x > window.innerWidth || y > window.innerHeight) return false;
+                var gal = target.closest('.lz-gallery, .product__media-wrapper, .product-gallery, .media-gallery, .product-single__media, .js-product-slide') || target.parentElement;
+                var els = document.elementsFromPoint(x, y);
+                for (var i = 0; i < els.length; i++) {
+                    var e = els[i];
+                    if (e === openBtn || openBtn.contains(e)) continue;
+                    if (e === target || e.contains(target) || (gal && gal.contains(e))) return false;
+                    return true;
+                }
+            } catch (_) {}
+            return false;
+        }
         function tryPlaceTriggerBtn() {
 
             return updateTriggerPosition();
@@ -1942,7 +1957,7 @@ setInterval(function(){var el=document.getElementById('q-step-error');if(!el)ret
 
         // Re-checa periodicamente caso DOM mude
 
-        setInterval(updateTriggerPosition, 1000);
+        setInterval(updateTriggerPosition, 400);
 
 
 
@@ -2199,6 +2214,12 @@ setInterval(function(){var el=document.getElementById('q-step-error');if(!el)ret
             // para tema sem galeria reconhecida — ela pegava banner/produto relacionado (Santi 20/10).
             const gallerySelectors = '.js-product-slide, .product__media-item, .product-single__media, [data-media-id]';
             let possibleContainers = Array.from(document.querySelectorAll(gallerySelectors)).filter(c => c.querySelector('img'));
+            // 10/11/2026: tema Shopify da Liuzzi (galeria .lz-gallery). Só os itens visíveis = fotos da cor escolhida.
+            const lzItems = Array.from(document.querySelectorAll('.lz-gallery__item')).filter(c => c.querySelector('img'));
+            if (lzItems.length) {
+                const lzVis = lzItems.filter(c => getComputedStyle(c).display !== 'none');
+                possibleContainers = lzVis.length ? lzVis : lzItems;
+            }
             if (!possibleContainers.length) possibleContainers = Array.from(document.querySelectorAll(containersSelectors));
 
             let imgEls = [];
