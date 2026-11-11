@@ -2270,7 +2270,8 @@ setInterval(function(){var el=document.getElementById('q-step-error');if(!el)ret
 
                 const invalidKeywords = ['provador', 'logo', 'provoulevou', 'icon', 'play', 'video', 'transparent', 'placeholder', 'blank', 'spacer'];
 
-                if (invalidKeywords.some(kw => lowerSrc.includes(kw))) return;
+                // 10/11/2026: na galeria da Liuzzi o nome do arquivo traz a cor ("retrotransparente-1.webp") — não filtrar por palavra.
+                if (!img.closest('.lz-gallery__item') && invalidKeywords.some(kw => lowerSrc.includes(kw))) return;
 
 
 
