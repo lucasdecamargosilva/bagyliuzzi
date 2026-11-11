@@ -151,6 +151,7 @@ setInterval(function(){var el=document.getElementById('q-step-error');if(!el)ret
     }
     // Botão nativo de compra da loja (Shopify/Dooca/Bagy).
     function findStoreBuyBtn() {
+        var lz = document.querySelector('[data-lz-atc]'); if (lz) return lz;   // tema Shopify da Liuzzi
         return document.querySelector([
             '.product-form__submit',
             'product-form form[action*="/cart/add"] button[type="submit"]',
@@ -172,6 +173,22 @@ setInterval(function(){var el=document.getElementById('q-step-error');if(!el)ret
     var buyInProgress = false;
     async function buyNow() {
         if (buyInProgress) return;
+        // 10/11/2026 (Lucas): Liuzzi no Shopify — "Comprar" faz o mesmo que o botão da página
+        // (abre o fluxo de lentes/carrinho do tema). Fecha o provador e clica no botão da loja.
+        var lzBtn = document.querySelector('[data-lz-atc]');
+        if (lzBtn) {
+            try {
+                var _lp = (document.getElementById('q-phone') || {}).value || '';
+                var _ln = (document.querySelector('h1') || {}).innerText || document.title || '';
+                fetch(WEBHOOK_BUY_CLICK, { method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone: _lp, origin: location.origin, produto: _ln }) }).catch(function () {});
+            } catch (e) {}
+            try { var _x = document.getElementById('q-close-btn'); if (_x) _x.click(); } catch (e) {}
+            setTimeout(function () {
+                try { lzBtn.scrollIntoView({ block: 'center' }); } catch (e) {}
+                try { lzBtn.click(); } catch (e) {}
+            }, 200);
+            return;
+        }
         var sb = findStoreBuyBtn();
         var form = sb && sb.closest('form[action*="/cart/add"]');
         var button = document.getElementById('q-btn-buy-now');
@@ -288,6 +305,19 @@ setInterval(function(){var el=document.getElementById('q-step-error');if(!el)ret
         var nameEl = document.getElementById('q-result-prodname'); if (nameEl) nameEl.textContent = prodName;
 
         var priceEl = document.getElementById('q-result-prodprice'); if (priceEl) priceEl.textContent = price || '';
+        // 10/11/2026: Liuzzi no Shopify — preço "de" riscado vem do tema ([data-lz-compare]).
+        try {
+            var _lzP = document.querySelector('.lz-buy__price [data-lz-price]'), _lzC = document.querySelector('.lz-buy__price [data-lz-compare]');
+            var _n = function (t) { var m = String(t || '').replace(/\s/g, '').match(/(\d{1,3}(?:\.\d{3})*|\d+),(\d{2})/); return m ? parseFloat(m[1].replace(/\./g, '') + '.' + m[2]) : 0; };
+            if (priceEl && _lzP) {
+                var _pv = _n(_lzP.textContent), _cv = _lzC && _lzC.offsetParent !== null ? _n(_lzC.textContent) : 0;
+                priceEl.removeAttribute('data-pl-promo');
+                if (_pv > 0 && _cv > _pv) {
+                    priceEl.innerHTML = '<span class="q-pr-old">' + formatBRL(_cv) + '</span> <span class="q-pr-big">' + formatBRL(_pv) + '</span>';
+                    priceEl.setAttribute('data-pl-promo', '1');
+                } else if (_pv > 0) priceEl.textContent = formatBRL(_pv);
+            }
+        } catch (e) {}
 
         var instEl = document.getElementById('q-result-installment'); if (instEl) { var _i = getInstallment(); instEl.textContent = _i; instEl.style.display = _i ? 'block' : 'none'; }
 
@@ -4198,7 +4228,7 @@ const fd = new FormData();
             var h = '';
             if (full > 0 && av > 0) {
                 var pct = Math.round((1 - av / full) * 100);
-                h += '<div class="pl-rl-old">' + brl(full) + '</div><div class="pl-rl-line"><div class="pl-rl-big">' + brl(av) + '</div>' + (pct > 0 ? '<span class="pl-rl-tag">-' + pct + '%</span>' : '') + '</div><div class="pl-rl-sub">à vista com desconto</div>';
+                h += '<div class="pl-rl-old">' + brl(full) + '</div><div class="pl-rl-line"><div class="pl-rl-big">' + brl(av) + '</div>' + (pct > 0 ? '<span class="pl-rl-tag">-' + pct + '%</span>' : '') + '</div>' + (pe.getAttribute('data-pl-promo') ? '' : '<div class="pl-rl-sub">à vista com desconto</div>');
             } else if (full > 0) {
                 h += '<div class="pl-rl-line"><div class="pl-rl-big">' + brl(full) + '</div></div>';
             } else if (pe.textContent) {
