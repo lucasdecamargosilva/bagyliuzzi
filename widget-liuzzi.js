@@ -463,6 +463,7 @@ setInterval(function(){var el=document.getElementById('q-step-error');if(!el)ret
 
         }
 
+        .q-btn-trigger-ia.pl-dentro { position: absolute !important; } /* 12/11: selo dentro da galeria, rola junto com a foto */
         .q-btn-trigger-ia:hover { filter: drop-shadow(0 6px 18px rgba(0,0,0,0.32)); }
 
         .q-btn-trigger-ia img { width: 100%; height: 100%; object-fit: contain; }
@@ -1942,6 +1943,22 @@ setInterval(function(){var el=document.getElementById('q-step-error');if(!el)ret
 
             const offsetTop = 30;
 
+            // 12/11/2026 (Lucas): na galeria da Liuzzi o selo fica DENTRO dela (position:absolute) e rola junto com a foto,
+            // sem o atraso de reposicionar um elemento fixo a cada rolagem (antes ele "descia" e voltava).
+            const host = target.closest && target.closest('.lz-gallery__main');
+            if (host) {
+                if (openBtn.parentElement !== host) {
+                    if (getComputedStyle(host).position === 'static') host.style.position = 'relative';
+                    host.appendChild(openBtn);
+                }
+                openBtn.classList.add('pl-dentro');
+                const hr = host.getBoundingClientRect();
+                openBtn.style.top = (rect.top - hr.top + margin + offsetTop) + 'px';
+                openBtn.style.left = (rect.right - hr.left - btnSize - margin) + 'px';
+                openBtn.style.visibility = plSeloCoberto(target, rect.right - margin - btnSize / 2, rect.top + margin + offsetTop + btnSize / 2) ? 'hidden' : 'visible';
+                return true;
+            }
+            if (openBtn.classList.contains('pl-dentro')) { openBtn.classList.remove('pl-dentro'); document.body.appendChild(openBtn); }
             // Posiciona no canto superior direito da imagem (um pouco mais pra baixo)
 
             openBtn.style.top = (rect.top + margin + offsetTop) + 'px';
