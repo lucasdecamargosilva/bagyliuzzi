@@ -455,7 +455,7 @@ setInterval(function(){var el=document.getElementById('q-step-error');if(!el)ret
 
             filter: drop-shadow(0 3px 10px rgba(0,0,0,0.22));
 
-            animation: q-shake 3s infinite;
+            animation: none; /* 12/11/2026 (Lucas): selo parado, sem tremer */
 
             transition: filter 0.2s;
 
