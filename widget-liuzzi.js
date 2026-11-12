@@ -1982,6 +1982,13 @@ setInterval(function(){var el=document.getElementById('q-step-error');if(!el)ret
         // Atualiza posição em scroll/resize
 
         window.addEventListener('scroll', updateTriggerPosition, { passive: true });
+        // 12/11/2026 (Lucas): na Liuzzi quem rola é a div .page-wrapper, não a janela; o selo (position:fixed) só era
+        // reposicionado a cada 400 ms e "descia" durante a rolagem. Capture pega a rolagem de qualquer elemento.
+        var _plSeloRaf = 0;
+        document.addEventListener('scroll', function () {
+            if (_plSeloRaf) return;
+            _plSeloRaf = requestAnimationFrame(function () { _plSeloRaf = 0; updateTriggerPosition(); });
+        }, { passive: true, capture: true });
 
         window.addEventListener('resize', updateTriggerPosition);
 
