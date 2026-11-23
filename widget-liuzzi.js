@@ -618,7 +618,7 @@ setInterval(function(){var el=document.getElementById('q-step-error');if(!el)ret
 
         }
 
-        #q-header-provador h1 {
+        #q-header-provador h1, #q-header-provador .q-title-prov {
 
             margin: 0;
 
@@ -1504,7 +1504,7 @@ setInterval(function(){var el=document.getElementById('q-step-error');if(!el)ret
 
                     <div id="q-header-provador">
 
-                        <h1>Provador Virtual</h1>
+                        <div class="q-title-prov" role="heading" aria-level="2">Provador Virtual</div>
 
                         <img src="https://cdn.dooca.store/148329/files/liuzzi-l-black.png?v=1730403153" alt="Liuzzi" style="height:18px;width:auto;filter:brightness(0);"/>
 
